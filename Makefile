@@ -13,7 +13,7 @@ LDFLAGS = $(OPENGL) -Wall -std=gnu99 -ldl -lm `pkg-config --libs vips` `pkg-conf
 OBJECTS = main.o file.o shaders.o input.o
 DEPS = file.h
 
-MATH_OBJECTS = src/math/intersect.o src/math/camera.c src/math/lorenz.o src/math/math.o src/math/rk4.o
+MATH_OBJECTS = src/math/intersect.o src/math/camera.c src/math/math.o
 BUNDLE_OBJECTS = src/bundle/glad/glad.o
 
 megagraph: $(OBJECTS) $(MATH_OBJECTS) $(BUNDLE_OBJECTS)
