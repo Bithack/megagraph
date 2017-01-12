@@ -1,8 +1,6 @@
 
 OS := $(shell uname)
 
-@echo OS = $(OS)
-
 ifeq ($(OS),Darwin)
 	OPENGL = -framework OpenGL
 else
@@ -12,7 +10,7 @@ endif
 CC = gcc
 CFLAGS = -Wall -Wno-missing-braces -std=gnu99 -Isrc/bundle `pkg-config --cflags vips` `pkg-config --cflags glfw3`
 LDFLAGS = $(OPENGL) -Wall -std=gnu99 -ldl -lm `pkg-config --libs vips` `pkg-config --libs glfw3`
-OBJECTS = main.o file.o shaders.o camera.o
+OBJECTS = main.o file.o shaders.o camera.o input.o
 DEPS = file.h
 
 MATH_OBJECTS = src/math/intersect.o src/math/lorenz.o src/math/math.o src/math/rk4.o

@@ -1,8 +1,6 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <vips/vips.h>
-#include "glad/glad.h"
-#include <GLFW/glfw3.h>
 
 #include "megagraph.h"
 
@@ -19,11 +17,9 @@ const int HEIGHT = 768*2;
 
 #define MAX_LINE_LEN (8192*2)
 
-GLFWwindow    *g_win = 0;
+struct megagraph mg;
 
-struct tcam *g_camera = 0;
-float cam_angle = 0.f;
-float cam_dist = 50.f;
+GLFWwindow    *g_win = 0;
 
 GLuint g_vertex_buf;
 GLuint g_vao;
@@ -52,7 +48,6 @@ static int frame();
 static int load(const char *filename);
 int compile_shaders(); /* shaders.c */
 static void on_glfw_error(int error, const char *description);
-static void on_glfw_key(GLFWwindow *win, int key, int scancode, int action, int mods);
 
 int main(int argc, char* argv[]) {
     VIPS_INIT(argv[0]);
@@ -98,18 +93,20 @@ int main(int argc, char* argv[]) {
         exit(1);
     }
 
-    g_camera = tcam_alloc();
+    mg.cam = tcam_alloc();
 
-    g_camera->width = WIDTH;
-    g_camera->height = HEIGHT;
+    mg.cam->width = WIDTH;
+    mg.cam->height = HEIGHT;
 
-    tcam_enable(g_camera, TCAM_PERSPECTIVE);
-    tcam_set_position(g_camera, 0.0f, 0.0f, 0.0f);
-    tcam_set_direction(g_camera, 0.0f, 0.0f, 1.0f);
+    tcam_enable(mg.cam, TCAM_PERSPECTIVE);
+    tcam_set_position(mg.cam, 0.0f, 0.0f, 0.0f);
+    tcam_set_direction(mg.cam, 0.0f, 0.0f, 1.0f);
 
     glfwSetKeyCallback(g_win, on_glfw_key);
 
     glfwSwapInterval(1);
+
+    mg.last_time = glfwGetTime();
 
     while (!glfwWindowShouldClose(g_win)) {
         glfwPollEvents();
@@ -308,6 +305,12 @@ static int load(const char *filename) {
 static int frame() {
     int w,h;
 
+    float now = glfwGetTime();
+    mg.dt = now - mg.last_time;
+    mg.last_time = now;
+
+    input_tick(mg.dt);
+
     glfwGetFramebufferSize(g_win, &w, &h);
 
     glViewport(0, 0, w, h);
@@ -325,12 +328,12 @@ static int frame() {
 
     glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
 
-    g_camera->_position = (tvec3){cosf(cam_angle)*cam_dist, 0.f, sinf(cam_angle)*cam_dist};
-    tcam_set_lookat(g_camera, 0.f, 0.f, 0.f);
-    tcam_enable(g_camera, TCAM_LOOKAT);
-    tcam_calculate(g_camera);
-    glUniformMatrix4fv(g_uniform_p, 1, GL_FALSE, g_camera->projection);
-    glUniformMatrix4fv(g_uniform_mv, 1, GL_FALSE, g_camera->view);
+    mg.cam->_position = (tvec3){cosf(mg.cam_angle)*mg.cam_dist, 0.f, sinf(mg.cam_angle)*mg.cam_dist};
+    tcam_set_lookat(mg.cam, 0.f, 0.f, 0.f);
+    tcam_enable(mg.cam, TCAM_LOOKAT);
+    tcam_calculate(mg.cam);
+    glUniformMatrix4fv(g_uniform_p, 1, GL_FALSE, mg.cam->projection);
+    glUniformMatrix4fv(g_uniform_mv, 1, GL_FALSE, mg.cam->view);
     glUniform1i(g_uniform_tex0, 0);
 
     int left = g_num_objects;
@@ -350,33 +353,6 @@ static int frame() {
     glfwSwapBuffers(g_win);
 
     return 0;
-}
-
-static void on_glfw_key(GLFWwindow *win, int key, int scancode, int action, int mods) {
-    if (action == GLFW_PRESS) {
-        switch (key) {
-            case GLFW_KEY_ESCAPE:
-                glfwSetWindowShouldClose(win, 1);
-                break;
-        }
-    }
-    switch (key) {
-        case GLFW_KEY_A:
-            cam_angle += 0.05f;
-            break;
-
-        case GLFW_KEY_D:
-            cam_angle -= 0.05f;
-            break;
-
-        case GLFW_KEY_S:
-            cam_dist += 1.0;
-            break;
-
-        case GLFW_KEY_W:
-            cam_dist -= 1.0;
-            break;
-    }
 }
 
 static void on_glfw_error(int error, const char *description) {
