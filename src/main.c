@@ -6,7 +6,6 @@
 
 #include "file.h"
 #include "math/glob.h"
-#include "camera.h"
 
 const int WIDTH = 1024*2;
 const int HEIGHT = 768*2;

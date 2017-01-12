@@ -1,6 +1,6 @@
 #include <stdlib.h>
 
-#include "math/matrix.h"
+#include "matrix.h"
 #include "camera.h"
 
 /** 

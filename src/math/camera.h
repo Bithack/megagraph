@@ -4,7 +4,7 @@
 /** @relates tcam @{ */
 
 #include <stdint.h>
-#include "math/vector.h"
+#include "vector.h"
 
 #define TCAM_VELOCITY    1 /**< Set to enable camera velocity. lol jk this isnt even implemented yet */
 #define TCAM_PERSPECTIVE 2 /**< Enable perspective camera. If unset, the camera is orthographic. */
