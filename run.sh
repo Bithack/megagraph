@@ -1,5 +1,3 @@
 #!/bin/bash
 
-#WRAPPER=`which primusrun`
-
-make && $WRAPPER ./megagraph $1
+make && exec ./megagraph $1

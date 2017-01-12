@@ -154,7 +154,7 @@ static int load(const char *filename) {
     /* create textures */
     g_textures = (GLuint*)malloc(g_num_textures * sizeof(GLuint));
     glGenTextures(g_num_textures, g_textures);
-    for (int x; x<g_num_textures; x++) {
+    for (int x=0; x<g_num_textures; x++) {
         glBindTexture(GL_TEXTURE_2D, g_textures[x]);
         glTexImage2D(GL_TEXTURE_2D, 0, g_texture_format, g_texture_width, g_texture_height,
                      0, GL_RGB, GL_UNSIGNED_BYTE, 0);
@@ -233,6 +233,7 @@ static int load(const char *filename) {
         img = vips_image_new_from_file(filename, NULL);
 
         if (!img) {
+            LOG_E("could not load: %s", filename);
             for (int y=0; y<g_image_height; y++) {
                 for (int x=0; x<g_image_width; x++) {
                     pbuf[((sx*g_image_width+x)*3) + ((sy*g_image_height+y)*g_texture_width*3) + 0] = 255;
