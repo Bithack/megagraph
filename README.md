@@ -8,3 +8,9 @@ libglfw3
 
 libvips
 
+
+### OS X
+
+```
+$ brew install glfw vips libxml2
+```
