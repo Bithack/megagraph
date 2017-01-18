@@ -8,10 +8,16 @@ A GPU accelerated tool for visualizing large data sets.
 
 Before compiling, please make sure you have the following dependencies installed:
 
-
 ```
 libglfw3
 libvips
+```
+
+### Building on Debian
+
+```
+$ sudo apt-get install libglfw3-dev libvips-dev pkg-config libgsf-1-dev
+$ make
 ```
 
 
@@ -19,6 +25,7 @@ libvips
 
 ```
 $ brew install glfw vips libxml2
+$ make
 ```
 
 ## Authors
