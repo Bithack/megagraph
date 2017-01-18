@@ -2,7 +2,6 @@
 
 A GPU accelerated tool for visualizing large data sets.
 
-![10000 images](/screenshot.jpg?raw=true "10 000 images rendered in real time on a cheap laptop")
 ![10000 images](/screenshot2.jpg?raw=true "10 000 images rendered in real time on a cheap laptop")
 
 ## Dependencies
