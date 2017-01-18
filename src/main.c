@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <vips/vips.h>
+#include <curl/curl.h>
 
 #include "megagraph.h"
 
@@ -48,8 +49,36 @@ static int load(const char *filename);
 int compile_shaders(); /* shaders.c */
 static void on_glfw_error(int error, const char *description);
 
+struct buf {
+    char *ptr;
+    size_t size;
+    size_t alloc_size;
+};
+/* callback function used by curl during download */
+static size_t
+write_to_buf(void *contents, size_t size, size_t nmemb, void *userp) {
+    size_t nbytes = size * nmemb;
+    struct buf *b = (struct buf*)userp;
+    if ((b->size + nbytes + 1) > b->alloc_size) {
+        size_t alloc_size = (size_t)(b->ptr + nbytes + 1024);
+        b->ptr = realloc(b->ptr, alloc_size);
+        if (b->ptr == NULL) {
+            LOG_E("out of mem");
+            exit(1);
+        }
+        b->alloc_size = alloc_size;
+    }
+
+    memcpy(&(b->ptr[b->size]), contents, nbytes);
+    b->size += nbytes;
+    b->ptr[b->size] = 0;
+
+    return nbytes;
+}
+
 int main(int argc, char* argv[]) {
     VIPS_INIT(argv[0]);
+    curl_global_init(CURL_GLOBAL_ALL);
 
     glfwSetErrorCallback(on_glfw_error);
 
@@ -118,6 +147,8 @@ int main(int argc, char* argv[]) {
     glfwDestroyWindow(g_win);
     glfwTerminate();
 
+    curl_global_cleanup();
+
     vips_shutdown();
     return 0;
 }
@@ -177,6 +208,17 @@ static int load(const char *filename) {
 
     rewind(fp);
 
+    CURL *curl_h;
+    CURLcode cres;
+    struct buf tmp_buf;
+    tmp_buf.ptr = malloc(1024*1024);
+    tmp_buf.alloc_size = 1024*1024;
+    tmp_buf.size = 0;
+    curl_h = curl_easy_init();
+    curl_easy_setopt(curl_h, CURLOPT_WRITEFUNCTION, write_to_buf);
+    curl_easy_setopt(curl_h, CURLOPT_WRITEDATA, (void*)&tmp_buf);
+    curl_easy_setopt(curl_h, CURLOPT_USERAGENT, MG_NAME "/" MG_VERSION);
+
     int current_texture = -1;
     int images_per_texture = num_images_per_texture();
     int images_per_line = (g_texture_width / g_image_width);
@@ -222,11 +264,24 @@ static int load(const char *filename) {
             strcpy(filename, "test.jpg");
         }
 
-        VipsImage *img,
+        VipsImage *img = 0,
                   *img_cropped = 0,
                   *img_scaled = 0;
 
-        img = vips_image_new_from_file(filename, NULL);
+        if (strncmp(filename, "http://", 7) == 0 || strncmp(filename, "https://", 8) == 0) {
+            /* download the file to memory */
+            tmp_buf.size = 0;
+            curl_easy_setopt(curl_h, CURLOPT_URL, filename);
+            cres = curl_easy_perform(curl_h);
+
+            if (cres != CURLE_OK) {
+                LOG_E("Could not download %s", filename);
+            } else {
+                img = vips_image_new_from_buffer(tmp_buf.ptr, tmp_buf.size, NULL, NULL);
+            }
+        } else {
+            img = vips_image_new_from_file(filename, NULL);
+        }
 
         if (!img) {
             LOG_E("could not load: %s", filename);
@@ -290,6 +345,9 @@ static int load(const char *filename) {
                     0, GL_RGB, GL_UNSIGNED_BYTE, pbuf);
     }
     free(pbuf);
+
+    free(tmp_buf.ptr);
+    curl_easy_cleanup(curl_h);
 
     glUnmapBuffer(GL_ARRAY_BUFFER);
     glBindBuffer(GL_ARRAY_BUFFER, 0);

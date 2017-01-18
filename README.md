@@ -11,12 +11,13 @@ Before compiling, please make sure you have the following dependencies installed
 ```
 libglfw3
 libvips
+libcurl
 ```
 
 ### Building on Debian
 
 ```
-$ sudo apt-get install libglfw3-dev libvips-dev pkg-config libgsf-1-dev
+$ sudo apt-get install libglfw3-dev libvips-dev pkg-config libgsf-1-dev libcurl4-openssl-dev
 $ make
 ```
 

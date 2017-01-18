@@ -8,8 +8,8 @@ else
 endif
 
 CC = gcc
-CFLAGS = -Wall -Wno-missing-braces -std=gnu99 -Isrc/bundle `pkg-config --cflags vips` `pkg-config --cflags glfw3`
-LDFLAGS = $(OPENGL) -Wall -std=gnu99 -ldl -lm `pkg-config --libs vips` `pkg-config --libs glfw3`
+CFLAGS = -Wall -Wno-missing-braces -std=gnu99 -Isrc/bundle `pkg-config --cflags vips` `pkg-config --cflags glfw3` `pkg-config --cflags libcurl`
+LDFLAGS = $(OPENGL) -Wall -std=gnu99 -ldl -lm `pkg-config --libs vips` `pkg-config --libs glfw3` `pkg-config --libs libcurl`
 OBJECTS = main.o file.o shaders.o input.o
 DEPS = file.h
 
