@@ -84,12 +84,14 @@ static char args_doc[] = "FILE";
 
 static struct argp_option options[] = {
     {"prefix", 'p', "PREFIX", 0, "Append PREFIX to all files."},
+    {"scale", 's', "SCALE", 0, "Multiply input vectors with SCALE"},
     {0}
 };
 
 struct arguments {
     const char *prefix;
     const char *args[1];
+    float scale;
 } arguments;
 
 static error_t
@@ -99,6 +101,10 @@ parse_opt(int key, char *arg, struct argp_state *state) {
     switch (key) {
         case 'p':
             arguments->prefix = arg;
+            break;
+
+        case 's':
+            arguments->scale = atof(arg);
             break;
 
         case ARGP_KEY_ARG:
@@ -125,6 +131,8 @@ parse_opt(int key, char *arg, struct argp_state *state) {
 static struct argp argp = {options, parse_opt, args_doc, doc};
 
 int main(int argc, char* argv[]) {
+
+    arguments.scale = 1.0f;
 
     argp_parse(&argp, argc, argv, 0, 0, &arguments);
 
@@ -308,6 +316,10 @@ static int load(const char *filename) {
         /* pack the index into the texture in the w component */
         buf->a = (float)i;
         sscanf(line, "%f %f %f %511s", &buf->r, &buf->g, &buf->b, url);
+
+        buf->r *= arguments.scale;
+        buf->g *= arguments.scale;
+        buf->b *= arguments.scale;
 
         int sx = i % images_per_line;
         int sy = i / images_per_line;
