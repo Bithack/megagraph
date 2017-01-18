@@ -1,3 +1,3 @@
 #!/bin/bash
 
-make && exec ./megagraph $1
+make && exec ./megagraph $@

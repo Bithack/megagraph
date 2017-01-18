@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <vips/vips.h>
 #include <curl/curl.h>
+#include <argp.h>
 
 #include "megagraph.h"
 
@@ -76,7 +77,57 @@ write_to_buf(void *contents, size_t size, size_t nmemb, void *userp) {
     return nbytes;
 }
 
+const char *argp_program_version = MG_NAME " " MG_VERSION;
+const char *argp_program_bug_address = "<megagraph@teorem.se>";
+static char doc[] = "MegaGraph -- big data visualization tool.";
+static char args_doc[] = "FILE";
+
+static struct argp_option options[] = {
+    {"prefix", 'p', "PREFIX", 0, "Append PREFIX to all files."},
+    {0}
+};
+
+struct arguments {
+    const char *prefix;
+    const char *args[1];
+} arguments;
+
+static error_t
+parse_opt(int key, char *arg, struct argp_state *state) {
+    struct arguments *arguments = state->input;
+
+    switch (key) {
+        case 'p':
+            arguments->prefix = arg;
+            break;
+
+        case ARGP_KEY_ARG:
+            if (state->arg_num > 1) {
+                argp_usage(state);
+            } else {
+                arguments->args[state->arg_num] = arg;
+            }
+            break;
+
+        case ARGP_KEY_END:
+            if (state->arg_num < 1) {
+                argp_usage(state);
+            }
+            break;
+
+        default:
+            return ARGP_ERR_UNKNOWN;
+    }
+
+    return 0;
+}
+
+static struct argp argp = {options, parse_opt, args_doc, doc};
+
 int main(int argc, char* argv[]) {
+
+    argp_parse(&argp, argc, argv, 0, 0, &arguments);
+
     VIPS_INIT(argv[0]);
     curl_global_init(CURL_GLOBAL_ALL);
 
@@ -110,7 +161,7 @@ int main(int argc, char* argv[]) {
 
     LOG_I("OpenGL %s, GLSL %s", glGetString(GL_VERSION), glGetString(GL_SHADING_LANGUAGE_VERSION));
 
-    const char *filename = argc > 1 ? argv[1] : "test/data";
+    const char *filename = arguments.args[0];
 
     if (compile_shaders() != 0) {
         LOG_E("failed compiling shaders");
@@ -231,6 +282,8 @@ static int load(const char *filename) {
 
     glActiveTexture(GL_TEXTURE0);
 
+    char url[512], full_url[1024];
+
     int i = 0;
     while (fgets(line, MAX_LINE_LEN, fp) == line && num_read < num_lines) {
 
@@ -254,37 +307,38 @@ static int load(const char *filename) {
 
         /* pack the index into the texture in the w component */
         buf->a = (float)i;
-        char filename[1024];
-        sscanf(line, "%f %f %f %1023s", &buf->r, &buf->g, &buf->b, filename);
+        sscanf(line, "%f %f %f %511s", &buf->r, &buf->g, &buf->b, url);
 
         int sx = i % images_per_line;
         int sy = i / images_per_line;
 
-        if (strlen(filename) <= 0) {
-            strcpy(filename, "test.jpg");
+        if (strlen(url) <= 0) {
+            strcpy(url, "test.jpg");
         }
+
+        sprintf(full_url, "%.511s%.512s", arguments.prefix, url);
 
         VipsImage *img = 0,
                   *img_cropped = 0,
                   *img_scaled = 0;
 
-        if (strncmp(filename, "http://", 7) == 0 || strncmp(filename, "https://", 8) == 0) {
+        if (strncmp(full_url, "http://", 7) == 0 || strncmp(full_url, "https://", 8) == 0) {
             /* download the file to memory */
             tmp_buf.size = 0;
-            curl_easy_setopt(curl_h, CURLOPT_URL, filename);
+            curl_easy_setopt(curl_h, CURLOPT_URL, full_url);
             cres = curl_easy_perform(curl_h);
 
             if (cres != CURLE_OK) {
-                LOG_E("Could not download %s", filename);
+                LOG_E("Could not download %s", full_url);
             } else {
                 img = vips_image_new_from_buffer(tmp_buf.ptr, tmp_buf.size, NULL, NULL);
             }
         } else {
-            img = vips_image_new_from_file(filename, NULL);
+            img = vips_image_new_from_file(full_url, NULL);
         }
 
         if (!img) {
-            LOG_E("could not load: %s", filename);
+            LOG_E("could not load: %s", full_url);
             for (int y=0; y<g_image_height; y++) {
                 for (int x=0; x<g_image_width; x++) {
                     pbuf[((sx*g_image_width+x)*3) + ((sy*g_image_height+y)*g_texture_width*3) + 0] = 255;
