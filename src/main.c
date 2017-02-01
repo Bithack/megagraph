@@ -352,6 +352,7 @@ static int load(const char *filename) {
 
         if (!img) {
             LOG_E("could not load: %s", full_url);
+            /* create an empty image */
             for (int y=0; y<g_image_height; y++) {
                 for (int x=0; x<g_image_width; x++) {
                     pbuf[((sx*g_image_width+x)*3) + ((sy*g_image_height+y)*g_texture_width*3) + 0] = 255;
@@ -366,7 +367,10 @@ static int load(const char *filename) {
 
             int size = image_height < image_width ? image_height : image_width;
 
-            if (vips_crop(img, &img_cropped, 0, 0, size, size, NULL) != 0) {
+            int offs_x = image_width / 2 - size / 2;
+            int offs_y = image_height / 2 - size / 2;
+
+            if (vips_crop(img, &img_cropped, offs_x, offs_y, size, size, NULL) != 0) {
                 LOG_E("Cropping failed.");
                 exit(1);
             }
