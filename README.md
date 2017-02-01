@@ -5,6 +5,13 @@ A GPU accelerated tool for visualizing large data sets.
 ![10000 images](/screenshot.jpg?raw=true "10 000 images rendered in real time on a cheap laptop")
 ![10000 images](/screenshot2.jpg?raw=true "10 000 images rendered in real time on a cheap laptop")
 
+## Usage
+
+```
+$ ./run.sh test/data_sample -s 2
+$ ./run.sh test/data_sample -l shrink=8 # performance tweak if loading jpeg-files
+```
+
 ## Dependencies
 
 Before compiling, please make sure you have the following dependencies installed:

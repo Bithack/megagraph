@@ -85,12 +85,14 @@ static char args_doc[] = "FILE";
 static struct argp_option options[] = {
     {"prefix", 'p', "PREFIX", 0, "Append PREFIX to all files."},
     {"scale", 's', "SCALE", 0, "Multiply input vectors with SCALE"},
+    {"load-params", 'l', "PARAMS", 0, "Image parameters, i.e. shrink=2"},
     {0}
 };
 
 struct arguments {
     const char *prefix;
     const char *args[1];
+    const char *load_params;
     float scale;
 } arguments;
 
@@ -105,6 +107,10 @@ parse_opt(int key, char *arg, struct argp_state *state) {
 
         case 's':
             arguments->scale = atof(arg);
+            break;
+
+        case 'l':
+            arguments->load_params = arg;
             break;
 
         case ARGP_KEY_ARG:
@@ -291,7 +297,14 @@ static int load(const char *filename) {
 
     glActiveTexture(GL_TEXTURE0);
 
-    char url[512], full_url[1024];
+    VipsInterpolate *interp = vips_interpolate_new("linear");
+
+    char url[512], full_url[1024+256];
+    char params[256];
+    params[0] = '\0';
+    if (arguments.load_params) {
+        sprintf(params, "[%.255s]", arguments.load_params);
+    }
 
     int i = 0;
     while (fgets(line, MAX_LINE_LEN, fp) == line && num_read < num_lines) {
@@ -344,9 +357,10 @@ static int load(const char *filename) {
             if (cres != CURLE_OK) {
                 LOG_E("Could not download %s", full_url);
             } else {
-                img = vips_image_new_from_buffer(tmp_buf.ptr, tmp_buf.size, NULL, NULL);
+                img = vips_image_new_from_buffer(tmp_buf.ptr, tmp_buf.size, params, NULL);
             }
         } else {
+            strcat(full_url, params);
             img = vips_image_new_from_file(full_url, NULL);
         }
 
@@ -377,7 +391,10 @@ static int load(const char *filename) {
 
             double scale = (double)g_image_width/(double)size;
 
-            if (vips_similarity(img_cropped, &img_scaled, "scale", scale, "interpolate", vips_interpolate_bilinear_static(), NULL) != 0) {
+            if (vips_similarity(img_cropped, &img_scaled,
+                        "scale", scale,
+                        "interpolate", interp,
+                        NULL) != 0) {
                 LOG_E("Resize failed!");
                 exit(1);
             }
