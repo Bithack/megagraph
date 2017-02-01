@@ -133,6 +133,7 @@ static struct argp argp = {options, parse_opt, args_doc, doc};
 int main(int argc, char* argv[]) {
 
     arguments.scale = 1.0f;
+    arguments.prefix = "";
 
     argp_parse(&argp, argc, argv, 0, 0, &arguments);
 
