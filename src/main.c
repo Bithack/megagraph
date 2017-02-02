@@ -86,6 +86,7 @@ static struct argp_option options[] = {
     {"prefix", 'p', "PREFIX", 0, "Append PREFIX to all files."},
     {"scale", 's', "SCALE", 0, "Multiply input vectors with SCALE"},
     {"load-params", 'l', "PARAMS", 0, "Image parameters, i.e. shrink=2"},
+    {"head", 'h', "N", 0, "Only load first N lines"},
     {0}
 };
 
@@ -93,6 +94,7 @@ struct arguments {
     const char *prefix;
     const char *args[1];
     const char *load_params;
+    int head;
     float scale;
 } arguments;
 
@@ -107,6 +109,10 @@ parse_opt(int key, char *arg, struct argp_state *state) {
 
         case 's':
             arguments->scale = atof(arg);
+            break;
+
+        case 'h':
+            arguments->head = atoi(arg);
             break;
 
         case 'l':
@@ -140,6 +146,7 @@ int main(int argc, char* argv[]) {
 
     arguments.scale = 1.0f;
     arguments.prefix = "";
+    arguments.head = 0;
 
     argp_parse(&argp, argc, argv, 0, 0, &arguments);
 
@@ -232,6 +239,10 @@ static int load(const char *filename) {
     }
 
     int num_lines = file_count_occurrences(fp, '\n');
+
+    if (arguments.head > 0 && num_lines > arguments.head) {
+        num_lines = arguments.head;
+    }
 
     LOG_I("Object count:\t%d", num_lines);
 
